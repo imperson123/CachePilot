@@ -15,7 +15,9 @@
   <a href="#dashboard-可视化演示">Dashboard</a> ·
   <a href="#如何运行">快速开始</a> ·
   <a href="DESIGN.md">设计文档</a> ·
-  <a href="EVALUATION.md">评测文档</a>
+  <a href="EVALUATION.md">评测文档</a> ·
+  <a href="docs/CachePilot_技术文档.pdf">技术文档 PDF</a> ·
+  <a href="docs/CachePilot_汇报PPT.pdf">汇报 PPT PDF</a>
 </p>
 
 ---
@@ -145,7 +147,10 @@ CachePilot/
 │   ├── run_all.sh
 │   ├── run_dashboard.sh         # Linux / Git Bash
 │   └── run_dashboard.bat        # Windows
-├── docs/screenshots/            # Dashboard 截图
+├── docs/
+│   ├── screenshots/             # Dashboard 截图
+│   ├── CachePilot_技术文档.pdf
+│   └── CachePilot_汇报PPT.pdf
 └── results/
     ├── csv/                     # 真实实测 + 评估 CSV
     ├── logs/
@@ -211,6 +216,8 @@ bash scripts/run_dashboard.sh
 | `results/csv/retrieval_scheduler.csv` | Scheduler 策略评估 |
 | `results/figures/*.png` | 带宽 / 延迟 / TTFT / 调度图 |
 | `docs/screenshots/*.png` | Dashboard 演示截图 |
+| `docs/CachePilot_技术文档.pdf` | 技术文档 |
+| `docs/CachePilot_汇报PPT.pdf` | 汇报 PPT |
 
 ---
 
