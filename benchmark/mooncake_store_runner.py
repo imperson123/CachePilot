@@ -24,7 +24,15 @@ from benchmark.parse_store_output import parse_store_output
 
 PROJECT_ROOT = _ROOT
 
+# Default --nr-objects for most scenarios. verify_write uses 16 when the user
+# leaves this default unchanged (scripts may still pass --nr-objects explicitly).
+DEFAULT_NR_OBJECTS = 64
+VERIFY_WRITE_DEFAULT_NR_OBJECTS = 16
+
 DEFAULT_CANDIDATES = [
+    # When CachePilot lives at Mooncake/benchmarks/cachepilot
+    Path(".."),
+    Path("../.."),
     Path("../Mooncake"),
     Path("../../Mooncake"),
     Path("/root/autodl-tmp/mooncake_competition/Mooncake"),
@@ -57,7 +65,8 @@ CSV_FIELDS = [
 def resolve_mooncake_root(explicit: Optional[str] = None) -> Path:
     """Resolve Mooncake repository root.
 
-    Order: --mooncake-root, MOONCAKE_ROOT, then default candidates.
+    Order: --mooncake-root, MOONCAKE_ROOT, then default candidates
+    (including parent dirs when embedded under benchmarks/cachepilot).
     """
     candidates: List[Path] = []
     if explicit:
@@ -65,6 +74,9 @@ def resolve_mooncake_root(explicit: Optional[str] = None) -> Path:
     env = os.environ.get("MOONCAKE_ROOT")
     if env:
         candidates.append(Path(env).expanduser())
+    # In-tree layout: benchmarks/cachepilot -> Mooncake root is ../..
+    candidates.append(PROJECT_ROOT.parent.parent)
+    candidates.append(PROJECT_ROOT.parent)
     for c in DEFAULT_CANDIDATES:
         # Resolve relative to project root / cwd
         if not c.is_absolute():
@@ -264,7 +276,15 @@ def main() -> int:
         help="Comma-separated batch sizes",
     )
     parser.add_argument("--runtime", type=int, default=5, help="Runtime seconds")
-    parser.add_argument("--nr-objects", type=int, default=64, help="Number of objects")
+    parser.add_argument(
+        "--nr-objects",
+        type=int,
+        default=DEFAULT_NR_OBJECTS,
+        help=(
+            f"Number of objects (default: {DEFAULT_NR_OBJECTS}; "
+            "verify_write uses 16 when left at the default)"
+        ),
+    )
     parser.add_argument(
         "--local-hostname",
         default="127.0.0.1:50071",
@@ -350,11 +370,19 @@ def main() -> int:
     logger.info("Using Mooncake root: %s", mooncake_root)
     logger.info("Benchmark script: %s", bench_script)
 
-    # Scenario-specific nr_objects override for verify_write
-    nr_objects = args.nr_objects
-    if args.scenario == "verify_write" and args.nr_objects == 64:
-        # Keep user override if they set --nr-objects; default path uses 16 in scripts
-        pass
+    # verify_write defaults to fewer objects unless the user overrides --nr-objects.
+    if (
+        args.scenario == "verify_write"
+        and args.nr_objects == DEFAULT_NR_OBJECTS
+    ):
+        effective_nr_objects = VERIFY_WRITE_DEFAULT_NR_OBJECTS
+    else:
+        effective_nr_objects = args.nr_objects
+    logger.info(
+        "Using nr_objects=%s (scenario=%s)",
+        effective_nr_objects,
+        args.scenario,
+    )
 
     value_sizes = parse_int_list(args.value_sizes)
     batch_sizes = parse_int_list(args.batch_sizes)
@@ -377,11 +405,6 @@ def main() -> int:
             log_name = f"store_{args.scenario}_{args.io_api}_vs{vs}_bs{bs}_{stamp}.log"
             log_file = log_dir / log_name
 
-            effective_nr = 16 if args.scenario == "verify_write" else nr_objects
-            # Allow explicit --nr-objects to win when user set it in verify script
-            if args.scenario == "verify_write":
-                effective_nr = args.nr_objects
-
             cmd = build_bench_command(
                 bench_script,
                 scenario=args.scenario,
@@ -389,7 +412,7 @@ def main() -> int:
                 value_size=vs,
                 batch_size=bs,
                 runtime=args.runtime,
-                nr_objects=effective_nr,
+                nr_objects=effective_nr_objects,
                 local_hostname=args.local_hostname,
                 metadata_server=args.metadata_server,
                 master_server=args.master_server,
@@ -427,7 +450,7 @@ def main() -> int:
                 "value_size_mb": round(vs / (1024 * 1024), 6),
                 "batch_size": bs,
                 "runtime": args.runtime,
-                "nr_objects": effective_nr,
+                "nr_objects": effective_nr_objects,
                 "return_code": rc,
                 "req_s": metrics.get("req_s"),
                 "kv_s": metrics.get("kv_s"),
