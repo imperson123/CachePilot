@@ -17,6 +17,8 @@
 <p align="center">
   <a href="https://pan.baidu.com/s/1eXwtXfHxEAkfoE_EqY9pdw">演示视频</a> ·
   <a href="#真实实测结果摘要">实测结果</a> ·
+  <a href="#开源规范性">开源规范</a> ·
+  <a href="#场景适配性">场景适配</a> ·
   <a href="#dashboard-可视化演示">Dashboard</a> ·
   <a href="#如何运行">快速开始</a> ·
   <a href="DESIGN.md">设计文档</a> ·
@@ -45,6 +47,58 @@ mooncake_master → HTTP metadata → MooncakeDistributedStore
 | Store Benchmark | **真实实机实测** | 官方 `store_kv_bench.py` + `MooncakeDistributedStore` |
 | Prefix Reuse Evaluation | 可控 workload 评估 | prefix length × hit ratio → TTFT 改善趋势 |
 | Retrieval Scheduler Evaluation | 离线策略评估 | Random / Nearest / Reuse-aware / CachePilot |
+
+### 评审维度对齐
+
+| 维度 | 权重 | CachePilot 体现 |
+|------|------|-----------------|
+| 技术完整性 | 30% | 真实 Store 实测 + Prefix / Scheduler 评估 + Dashboard + 文档 / PPT / 视频 |
+| 开源规范性 | 10% | 独立仓库、清晰目录、可复现脚本、文档齐全、非侵入对接 Mooncake |
+| 场景适配性 | 25% | 对齐长上下文 Prefix 复用、Store IO、多节点 KV 检索调度等真实 serving 场景 |
+| 创新性 | 35% | CachePilot 评分调度 + 官方 bench 包装评测套件 + 复用收益量化 |
+
+---
+
+## 开源规范性
+
+CachePilot 以**可独立复现、可审查、可二次开发**为目标组织开源交付物，不 fork、不 patch Mooncake 核心。
+
+| 规范项 | 落地方式 |
+|--------|----------|
+| 独立开源仓库 | 独立 GitHub 仓库，与 Mooncake 解耦；通过 `MOONCAKE_ROOT` / `--mooncake-root` 对接 |
+| 非侵入集成 | 仅 subprocess 调用官方 `store_kv_bench.py`，不修改 Mooncake C++/Python 源码 |
+| 目录与模块清晰 | `benchmark/`、`scripts/`、`results/`、`docs/` 职责分离，入口脚本可执行 |
+| 依赖可声明 | `requirements.txt` 明确列出 `numpy` / `pandas` / `matplotlib` / `streamlit` |
+| 一键复现 | `bash scripts/run_all.sh` 产出 CSV / log / figures；`run_dashboard.sh` 可视化 |
+| 文档完备 | `README.md` + `DESIGN.md` + `EVALUATION.md` + 技术文档 PDF + 汇报 PPT + 演示视频 |
+| 结果可追溯 | 真实实测 CSV / 原始 Store 日志 / 决策明细一并归档，指标可核对 |
+| 跨平台脚本 | Linux `*.sh` + Windows `run_dashboard.bat`；路径统一相对项目根 |
+| 许可证 | 本仓库采用 [MIT License](LICENSE)；Mooncake 本体遵循其上游许可证 |
+
+**评审可直接验证：** clone → `pip install -r requirements.txt` → `bash scripts/run_all.sh` / `bash scripts/run_dashboard.sh`。
+
+---
+
+## 场景适配性
+
+CachePilot 面向 Mooncake / LLM serving 中的真实 KVCache 痛点设计，而不是脱离场景的通用压测工具。
+
+| 真实场景 | 痛点 | CachePilot 适配方式 |
+|----------|------|---------------------|
+| 长上下文 Prefill | TTFT 随 prefix 变长急剧上升 | Prefix Reuse Evaluation：量化 hit ratio / prefix length 对 TTFT 的改善 |
+| 多请求共享 System Prompt / RAG 前缀 | Prefix KV 可复用但缺少收益评估 | 可控 workload：`prefix_tokens × cache_hit_ratio`，可与真实 Store get 延迟标定 |
+| Mooncake Store 读写 | 需要官方语义下的吞吐 / 尾延迟基线 | 真实调用 `verify_write` / `read_perf`，覆盖 4KB→4MB、batch 1→16 |
+| Prefill–Decode 分离与跨节点取 KV | 副本选择影响延迟、远程流量与热点 | Retrieval Scheduler：对比 Random / Nearest / Reuse-aware / **CachePilot** |
+| 集群过载与热点源节点 | 热点副本拖垮尾延迟 | `hotspot_ratio`、`remote_traffic_mb`、p99 联合评估 |
+| 比赛 / 工程演示与复现 | 需要可展示、可截图、可复核 | Streamlit Dashboard + 归档 CSV / PNG / 视频 |
+
+**与 Mooncake 能力的对应关系：**
+
+- **Store 层**：适配 `MooncakeDistributedStore` 的 put/get 与官方 scenario，建立真实 IO 基线。  
+- **复用层**：适配长上下文 / 多轮对话中的 Prefix Cache 复用收益分析。  
+- **调度层**：适配多副本、多节点检索时的延迟–流量–负载权衡，CachePilot 分数显式纳入 importance、reuse、fetch latency。
+
+> 说明：Store Benchmark 为 AutoDL RTX 4090 上的**真实实机实测**；Prefix / Scheduler 为面向上述场景的**可控 workload 策略评估**，用于指导调度与复用策略，不替代端到端 LLM serving 声明。
 
 ---
 
@@ -137,6 +191,8 @@ bash scripts/run_dashboard.sh
 | KVCache 复用 | `prefix_reuse_benchmark.py` | 可控 Prefix Reuse workload 评估 |
 | 检索 / 调度优化 | `retrieval_scheduler_sim.py` | Retrieval Scheduler 策略评估 |
 | 可复现实验 | `scripts/run_all.sh` + Dashboard | CSV / PNG / log + 可视化演示 |
+| 开源规范 | 独立仓库 + LICENSE + 文档 | 非侵入、可复现、可审查 |
+| 场景适配 | Prefix / Store / Scheduler | 对齐长上下文复用与跨节点取 KV |
 
 ---
 
@@ -246,4 +302,4 @@ bash scripts/run_dashboard.sh
 
 ## License
 
-2026 Mooncake 赛题参赛作品。Mooncake 本体请遵循其上游许可证。
+本仓库采用 [MIT License](LICENSE)。Mooncake 本体请遵循其上游许可证。
