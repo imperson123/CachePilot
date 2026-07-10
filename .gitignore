@@ -1,0 +1,30 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Results (keep directory placeholders)
+results/csv/*.csv
+results/logs/*.log
+results/logs/*.csv
+results/figures/*.png
+!results/csv/.gitkeep
+!results/logs/.gitkeep
+!results/figures/.gitkeep
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Large / local
+*.bin
+*.pt
+*.onnx
+*.so
+*.dll
