@@ -1,59 +1,124 @@
-# CachePilot：基于 Mooncake 的 KVCache 复用与调度优化系统
+# CachePilot
 
-> 2026 Mooncake 赛题参赛作品  
-> 定位：**非侵入式** KVCache 评测套件（non-invasive evaluation suite）  
-> Store 底座：**真实 Mooncake Store 实机实测**（已在 AutoDL RTX 4090 跑通）
+### 基于 Mooncake 的 KVCache 复用与调度评测系统
+
+<p align="center">
+  <img src="docs/screenshots/dashboard_store_benchmark.png" alt="CachePilot Store Benchmark Dashboard" width="100%"/>
+</p>
+
+<p align="center">
+  <b>真实 Mooncake Store 实机实测</b> · AutoDL RTX 4090 · TCP · 峰值带宽 <code>1399.08 MiB/s</code>
+</p>
+
+<p align="center">
+  <a href="#真实实测结果摘要">实测结果</a> ·
+  <a href="#dashboard-可视化演示">Dashboard</a> ·
+  <a href="#如何运行">快速开始</a> ·
+  <a href="DESIGN.md">设计文档</a> ·
+  <a href="EVALUATION.md">评测文档</a>
+</p>
 
 ---
 
 ## 项目简介
 
-**CachePilot** 是一个基于 [Mooncake](https://github.com/kvcache-ai/Mooncake) 的 KVCache 复用与调度评测系统。项目以 Mooncake 官方 Store Benchmark 为真实底座，通过封装 `store_kv_bench.py` 完成真实 Mooncake Store 的 put/get/`read_perf` 实机测试，并在此基础上扩展 Prefix Reuse workload 评估和 Retrieval Scheduler 策略评估模块。系统统一输出 CSV、日志和图表，用于分析 KVCache 存储吞吐、P50/P99 延迟、Prefix 复用收益以及检索调度策略效果。
+**CachePilot** 是 2026 Mooncake 赛题参赛作品：一个**非侵入式** KVCache 评测套件。
 
-项目**不修改 Mooncake 核心代码**，真实调用链路为：
+它以 Mooncake 官方 Store Benchmark 为真实底座，通过封装 `store_kv_bench.py` 完成真实 Mooncake Store 的 put/get/`read_perf` **实机测试**，并扩展 Prefix Reuse 可控 workload 评估与 Retrieval Scheduler 离线策略评估。系统统一输出 CSV、日志、图表，并提供 Streamlit Dashboard 用于演示与截图。
 
-`mooncake_master` → HTTP metadata → `MooncakeDistributedStore` → 官方 `store_kv_bench.py` → CachePilot `mooncake_store_runner.py`
+**不修改 Mooncake 核心代码。** 真实调用链路：
+
+```text
+mooncake_master → HTTP metadata → MooncakeDistributedStore
+  → store_kv_bench.py → mooncake_store_runner.py → results/ → dashboard.py
+```
+
+| 模块 | 性质 | 说明 |
+|------|------|------|
+| Store Benchmark | **真实实机实测** | 官方 `store_kv_bench.py` + `MooncakeDistributedStore` |
+| Prefix Reuse Evaluation | 可控 workload 评估 | prefix length × hit ratio → TTFT 改善趋势 |
+| Retrieval Scheduler Evaluation | 离线策略评估 | Random / Nearest / Reuse-aware / CachePilot |
+
+---
+
+## Dashboard 预览
+
+Streamlit 演示界面，适合比赛录屏与文档截图。
+
+### Store Benchmark — 真实 Mooncake Store 实测
+
+<p align="center">
+  <img src="docs/screenshots/dashboard_store_benchmark.png" alt="Store Benchmark Dashboard" width="100%"/>
+</p>
+
+> 带宽随 value size 上升，峰值约 **1399 MiB/s**（1MB, batch=4）；大对象高 batch 下 p99 明显升高。
+
+### Retrieval Scheduler — 策略评估对比
+
+<p align="center">
+  <img src="docs/screenshots/dashboard_scheduler.png" alt="Retrieval Scheduler Dashboard" width="100%"/>
+</p>
+
+> 对比 Random / Nearest / Reuse-aware / CachePilot 的延迟、远程流量与热点比。
+
+### 启动 Dashboard
+
+```bash
+cd CachePilot
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+bash scripts/run_dashboard.sh
+# Windows: scripts\run_dashboard.bat
+```
+
+浏览器打开 [http://localhost:8501](http://localhost:8501)（服务器请使用外部映射地址）。
 
 ---
 
 ## 真实实测结果摘要
 
-实验平台：AutoDL 容器实例 · RTX 4090 24GB · 16 核 CPU · 120GB 内存 · Ubuntu 22.04 · Python 3.10 · CUDA 11.8 · `mooncake-transfer-engine-non-cuda` · 协议 TCP。
+**环境：** AutoDL · RTX 4090 24GB · 16 核 / 120GB · Ubuntu 22.04 · Python 3.10 · CUDA 11.8 · `mooncake-transfer-engine-non-cuda` · **TCP**
 
-### verify_write（`results/csv/store_verify_real.csv`）
+### verify_write — `return_code=0`
 
-已成功，`return_code=0`，`misses=0`，`verify_failures=0`：
+| req/s | kv/s | MiB/s | p50 | p95 | p99 | misses | verify_failures |
+|------:|-----:|------:|----:|----:|----:|-------:|----------------:|
+| 2482.98 | 9931.94 | 38.8 | 0.260 ms | 0.718 ms | 0.781 ms | **0** | **0** |
 
-| 指标 | 数值 |
-|------|------|
-| req/s | 2482.98 |
-| kv/s | 9931.94 |
-| MiB/s | 38.8 |
-| lat_mean | 0.377 ms |
-| lat_p50 | 0.260 ms |
-| lat_p95 | 0.718 ms |
-| lat_p99 | 0.781 ms |
+### read_perf — 16 组全部 `return_code=0`
 
-### read_perf（`results/csv/store_benchmark.csv`）
+| value_size | batch | MiB/s | p50 | p99 |
+|------------|------:|------:|----:|----:|
+| 4KB | 1 | 28.78 | 0.106 ms | 0.380 ms |
+| 4KB | 16 | 139.86 | 0.352 ms | 0.703 ms |
+| 64KB | 4 | 694.43 | 0.304 ms | 0.917 ms |
+| **1MB** | **4** | **1399.08** | 2.574 ms | 5.956 ms |
+| 4MB | 4 | 1227.74 | 12.251 ms | 22.456 ms |
+| 4MB | 16 | 1015.36 | 52.517 ms | **93.267 ms** |
 
-共 **16 组**真实运行，全部 `return_code=0`（value_size ∈ {4KB, 64KB, 1MB, 4MB} × batch_size ∈ {1, 4, 8, 16}）。
+<p align="center">
+  <img src="results/figures/store_bandwidth_by_value_size.png" alt="Store bandwidth" width="48%"/>
+  <img src="results/figures/store_p99_by_batch_size.png" alt="Store p99" width="48%"/>
+</p>
 
-典型结果：
+<p align="center">
+  <sub>左：真实 Store 带宽 · 右：真实 Store p99 延迟</sub>
+</p>
 
-| value_size | batch | MiB/s | p50 (ms) | p99 (ms) |
-|------------|-------|-------|----------|----------|
-| 4KB | 1 | 28.78 | 0.106 | 0.380 |
-| 4KB | 16 | 139.86 | 0.352 | 0.703 |
-| 64KB | 4 | 694.43 | 0.304 | 0.917 |
-| 1MB | 4 | **1399.08** | 2.574 | 5.956 |
-| 4MB | 4 | 1227.74 | 12.251 | 22.456 |
-| 4MB | 16 | 1015.36 | 52.517 | **93.267** |
+---
 
-要点：
+## 策略评估图表
 
-- 最高带宽：1MB value_size、batch=4，**1399.08 MiB/s**
-- 大对象高并发：4MB、batch=16，p99=**93.267 ms**
-- 全程 `misses=0`，`verify_failures=0`
+<p align="center">
+  <img src="results/figures/prefix_length_vs_ttft_reduction.png" alt="Prefix TTFT reduction" width="48%"/>
+  <img src="results/figures/cache_hit_ratio_vs_ttft.png" alt="Hit ratio vs TTFT" width="48%"/>
+</p>
+
+<p align="center">
+  <img src="results/figures/scheduler_latency.png" alt="Scheduler latency" width="32%"/>
+  <img src="results/figures/scheduler_remote_traffic.png" alt="Remote traffic" width="32%"/>
+  <img src="results/figures/scheduler_hotspot.png" alt="Hotspot" width="32%"/>
+</p>
 
 ---
 
@@ -61,123 +126,56 @@
 
 | 赛题关注点 | CachePilot 模块 | 说明 |
 |-----------|-----------------|------|
-| Mooncake Store 性能 | `mooncake_store_runner.py` | 真实调用官方 `store_kv_bench.py`，实测 `MooncakeDistributedStore` |
-| KVCache 复用 | `prefix_reuse_benchmark.py` | 可控 Prefix Reuse workload 评估（TTFT 改善趋势） |
-| 检索 / 调度优化 | `retrieval_scheduler_sim.py` | Retrieval Scheduler 策略评估（Random / Nearest / Reuse-aware / CachePilot） |
-| 可复现实验 | `scripts/run_all.sh` + `results/` | 一键跑通并落盘 CSV / PNG / log |
-
----
-
-## 系统模块
-
-### 1. Store Benchmark（真实实机实测）
-
-真实调用 Mooncake 官方 `store_kv_bench.py`，测试 `MooncakeDistributedStore` 的 `verify_write` 与 `read_perf`。已在 AutoDL RTX 4090 实例上跑通真实数据。
-
-### 2. Prefix Reuse Evaluation（可控 workload 评估）
-
-面向长上下文多请求共享 prefix 的可控 workload 评估，基于 prefix length、cache hit ratio 和 Store get latency 参数计算 TTFT 改善趋势。可与真实 Store 延迟参数对齐。
-
-### 3. Retrieval Scheduler Evaluation（离线策略评估）
-
-面向多节点 KVCache 检索场景的策略评估，对比 Random、Nearest、Reuse-aware、CachePilot，输出延迟、远程流量与热点比。
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    CachePilot Pipeline                   │
-├──────────────┬──────────────────┬───────────────────────┤
-│ Store Bench  │  Prefix Reuse    │  Retrieval Scheduler  │
-│ (真实实测)    │  Evaluation     │  Evaluation           │
-│              │                  │                       │
-│ store_kv_    │  hit ratio ×     │  Random / Nearest /   │
-│ bench.py     │  prefix length   │  Reuse-aware /        │
-│              │  → TTFT 收益      │  CachePilot           │
-└──────┬───────┴────────┬─────────┴───────────┬───────────┘
-       │                │                     │
-       ▼                ▼                     ▼
-              results/csv + results/figures
-                         │
-                         ▼
-                  plot_results.py
-```
-
-说明：Store Benchmark 是真实 Mooncake Store 实机实测；Prefix Reuse 与 Retrieval Scheduler 是策略评估模块，当前基于可控 workload 与真实 Store 参数进行离线评估。
+| Mooncake Store 性能 | `mooncake_store_runner.py` | 真实调用官方 bench，实测 `MooncakeDistributedStore` |
+| KVCache 复用 | `prefix_reuse_benchmark.py` | 可控 Prefix Reuse workload 评估 |
+| 检索 / 调度优化 | `retrieval_scheduler_sim.py` | Retrieval Scheduler 策略评估 |
+| 可复现实验 | `scripts/run_all.sh` + Dashboard | CSV / PNG / log + 可视化演示 |
 
 ---
 
 ## 目录结构
 
-```
+```text
 CachePilot/
-├── README.md
-├── DESIGN.md
-├── EVALUATION.md
+├── README.md / DESIGN.md / EVALUATION.md
+├── dashboard.py                 # Streamlit 演示界面
 ├── requirements.txt
-├── benchmark/
-│   ├── __init__.py
-│   ├── metrics.py
-│   ├── mooncake_store_runner.py
-│   ├── parse_store_output.py
-│   ├── prefix_reuse_benchmark.py
-│   ├── retrieval_scheduler_sim.py
-│   └── plot_results.py
+├── benchmark/                   # Store wrapper + 策略评估 + 绘图
 ├── scripts/
 │   ├── run_all.sh
-│   ├── run_store_verify.sh
-│   ├── run_store_perf.sh
-│   ├── run_prefix_reuse.sh
-│   ├── run_scheduler_sim.sh
-│   └── plot_all.sh
+│   ├── run_dashboard.sh         # Linux / Git Bash
+│   └── run_dashboard.bat        # Windows
+├── docs/screenshots/            # Dashboard 截图
 └── results/
-    ├── csv/
+    ├── csv/                     # 真实实测 + 评估 CSV
     ├── logs/
-    └── figures/
+    └── figures/                 # 带宽 / 延迟 / TTFT / 调度图
 ```
 
 ---
 
-## 安装方式
+## 安装与运行
 
 ```bash
 cd CachePilot
 python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-依赖：`numpy`、`pandas`、`matplotlib`。Store 实测另需安装 Mooncake Python binding（本实验使用 `mooncake-transfer-engine-non-cuda`）并启动 `mooncake_master`。
+依赖：`numpy` · `pandas` · `matplotlib` · `streamlit`  
+Store 实测另需 Mooncake Python binding（本实验：`mooncake-transfer-engine-non-cuda`）并启动 master。
 
----
-
-## 如何设置 MOONCAKE_ROOT
-
-Store Benchmark 通过 subprocess 调用官方脚本：
-
-```
-{MOONCAKE_ROOT}/mooncake-store/benchmarks/store_kv_bench.py
-```
+### 设置 MOONCAKE_ROOT
 
 ```bash
-# 方式 1：环境变量
 export MOONCAKE_ROOT=/path/to/Mooncake
-
-# 方式 2：命令行参数
-python benchmark/mooncake_store_runner.py --mooncake-root /path/to/Mooncake ...
+# 或: python benchmark/mooncake_store_runner.py --mooncake-root /path/to/Mooncake ...
 ```
 
-未指定时自动尝试：`../Mooncake`、`../../Mooncake`、`/root/autodl-tmp/mooncake_competition/Mooncake`，或读取 `MOONCAKE_ROOT`。
+未指定时自动尝试 `../Mooncake`、`../../Mooncake`、`/root/autodl-tmp/mooncake_competition/Mooncake`。
 
-找不到时提示：
-
-```text
-Mooncake root not found. Please set --mooncake-root or MOONCAKE_ROOT.
-```
-
-Store 实测依赖 Mooncake master 和 Python binding；Prefix Reuse 与 Scheduler 可作为离线策略评估模块独立运行。
-
----
-
-## 如何启动 Mooncake master
+### 启动 Mooncake master
 
 ```bash
 mooncake_master \
@@ -187,83 +185,53 @@ mooncake_master \
   --eviction_high_watermark_ratio=0.95
 ```
 
-本实验 AutoDL 实例连接参数：
-
-| 参数 | 值 |
-|------|-----|
+| 参数 | 本实验值 |
+|------|----------|
 | metadata-server | `http://HOST_IP:8080/metadata` |
 | master-server | `HOST_IP:50051` |
 | protocol | `tcp` |
-| local-hostname | `127.0.0.1:50071`（客户端默认） |
 
----
-
-## 如何运行
-
-### 一键全流程（推荐）
+### 一键全流程
 
 ```bash
 export MOONCAKE_ROOT=/path/to/Mooncake
-# 先启动 mooncake_master
 bash scripts/run_all.sh
-```
-
-执行顺序：
-
-1. 创建 `results/{csv,logs,figures}`
-2. `run_store_verify.sh` — 真实 verify_write
-3. `run_store_perf.sh` — 真实 read_perf 矩阵
-4. `run_prefix_reuse.sh` — Prefix Reuse 可控 workload 评估
-5. `run_scheduler_sim.sh` — Retrieval Scheduler 策略评估
-6. `plot_all.sh`
-7. 打印生成的 CSV / PNG / log 路径
-
-### 分步运行
-
-```bash
-bash scripts/run_store_verify.sh
-bash scripts/run_store_perf.sh
-bash scripts/run_prefix_reuse.sh
-bash scripts/run_scheduler_sim.sh
-bash scripts/plot_all.sh
+bash scripts/run_dashboard.sh
 ```
 
 ---
 
-## 输出文件说明
+## 输出文件
 
 | 路径 | 说明 |
 |------|------|
-| `results/csv/store_verify_real.csv` | 真实 verify_write 结果 |
-| `results/csv/store_benchmark.csv` | 真实 read_perf 矩阵结果 |
-| `results/csv/prefix_reuse.csv` | Prefix Reuse 可控 workload 评估结果 |
-| `results/csv/retrieval_scheduler.csv` | Retrieval Scheduler 策略评估汇总 |
-| `results/logs/store_*.log` | 每次 Store 运行的原始 stdout/stderr |
-| `results/logs/prefix_reuse.log` | Prefix 评估日志 |
-| `results/logs/retrieval_scheduler.log` | Scheduler 评估日志 |
-| `results/logs/retrieval_scheduler_decisions.csv` | 每次调度决策明细 |
-| `results/figures/*.png` | 带宽 / 延迟 / TTFT / 调度对比图 |
+| `results/csv/store_verify_real.csv` | 真实 verify_write |
+| `results/csv/store_benchmark.csv` | 真实 read_perf（16 组） |
+| `results/csv/prefix_reuse.csv` | Prefix Reuse 评估 |
+| `results/csv/retrieval_scheduler.csv` | Scheduler 策略评估 |
+| `results/figures/*.png` | 带宽 / 延迟 / TTFT / 调度图 |
+| `docs/screenshots/*.png` | Dashboard 演示截图 |
 
 ---
 
 ## 当前限制
 
-1. **非侵入**：不修改 Mooncake 核心；Store 侧完全依赖官方 `store_kv_bench.py` 与 `MooncakeDistributedStore`。
-2. **Prefix / Scheduler 为离线策略评估**：基于可控 workload 与可标定 Store 参数，不作为真实分布式集群端到端 LLM serving 性能声明。
-3. **Store 实测依赖服务**：需启动 `mooncake_master` 并安装 Mooncake Python binding。
-4. **当前实机配置为单机 TCP**：RDMA / 多机拓扑需另行扩展。
+1. **非侵入**：不修改 Mooncake 核心，Store 依赖官方 bench 与 `MooncakeDistributedStore`。
+2. **Prefix / Scheduler** 为离线策略评估，不作为端到端集群 LLM serving 性能声明。
+3. Store 实测需 `mooncake_master` + Mooncake Python binding。
+4. 当前实机验证为**单机 TCP**；RDMA / 多机待扩展。
 
 ---
 
 ## 后续计划
 
-- 扩展官方 scenario（`fill`、`write_perf`、`mixed_rw`、`zcopy`）一键矩阵
-- 用真实 Store get 延迟进一步标定 Prefix Reuse 参数
-- 扩展 CachePilot 调度分数（副本放置、带宽预算、跨机拓扑）
-- 多机 / RDMA 环境下的 Store 与调度联合评测
+- 扩展 `fill` / `write_perf` / `mixed_rw` / `zcopy` 一键矩阵
+- 用真实 Store get 延迟标定 Prefix Reuse 参数
+- 扩展 CachePilot 调度分数（副本、带宽预算、拓扑）
+- 多机 / RDMA 联合评测
 
 ---
 
 ## License
 
-本项目为 2026 Mooncake 赛题参赛作品，代码可独立使用与复现实验。Mooncake 本体请遵循其上游许可证。
+2026 Mooncake 赛题参赛作品。Mooncake 本体请遵循其上游许可证。

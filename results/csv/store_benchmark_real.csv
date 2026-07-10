@@ -1,0 +1,17 @@
+timestamp,scenario,io_api,value_size,value_size_mb,batch_size,runtime,nr_objects,return_code,req_s,kv_s,mib_s,lat_mean,lat_p50,lat_p95,lat_p99,misses,verify_failures,errors,log_file
+2026-07-10T10:51:34Z,read_perf,plain,4096,0.003906,1,5,64,0,7622.03,7622.03,29.77,0.124,0.112,0.155,0.318,0,0,,results/logs/store_read_perf_plain_vs4096_bs1_20260710T105134.log
+2026-07-10T10:51:34Z,read_perf,plain,4096,0.003906,4,5,64,0,4601.78,18407.11,71.9,0.205,0.151,0.376,0.693,0,0,,results/logs/store_read_perf_plain_vs4096_bs4_20260710T105142.log
+2026-07-10T10:51:34Z,read_perf,plain,4096,0.003906,8,5,64,0,3564.17,28513.36,111.38,0.265,0.205,0.502,0.603,0,0,,results/logs/store_read_perf_plain_vs4096_bs8_20260710T105150.log
+2026-07-10T10:51:34Z,read_perf,plain,4096,0.003906,16,5,64,0,2104.12,33665.95,131.51,0.448,0.322,0.767,0.828,0,0,,results/logs/store_read_perf_plain_vs4096_bs16_20260710T105159.log
+2026-07-10T10:51:34Z,read_perf,plain,65536,0.0625,1,5,64,0,4884.59,4884.59,305.29,0.194,0.172,0.261,0.476,0,0,,results/logs/store_read_perf_plain_vs65536_bs1_20260710T105207.log
+2026-07-10T10:51:34Z,read_perf,plain,65536,0.0625,4,5,64,0,2479.34,9917.38,619.84,0.393,0.337,0.621,0.895,0,0,,results/logs/store_read_perf_plain_vs65536_bs4_20260710T105215.log
+2026-07-10T10:51:34Z,read_perf,plain,65536,0.0625,8,5,64,0,1291.33,10330.65,645.67,0.761,0.609,1.399,1.719,0,0,,results/logs/store_read_perf_plain_vs65536_bs8_20260710T105224.log
+2026-07-10T10:51:34Z,read_perf,plain,65536,0.0625,16,5,64,0,623.23,9971.66,623.23,1.581,1.172,2.579,2.776,0,0,,results/logs/store_read_perf_plain_vs65536_bs16_20260710T105232.log
+2026-07-10T10:51:34Z,read_perf,plain,1048576,1.0,1,5,64,21,1246.59,1246.59,1246.59,0.792,0.742,0.84,1.836,0,0,,results/logs/store_read_perf_plain_vs1048576_bs1_20260710T105241.log
+2026-07-10T10:51:34Z,read_perf,plain,1048576,1.0,4,5,64,21,305.03,1220.14,1220.14,3.262,3.03,4.0,6.136,0,0,,results/logs/store_read_perf_plain_vs1048576_bs4_20260710T105249.log
+2026-07-10T10:51:34Z,read_perf,plain,1048576,1.0,8,5,64,21,166.53,1332.22,1332.22,5.982,5.076,9.712,11.576,0,0,,results/logs/store_read_perf_plain_vs1048576_bs8_20260710T105257.log
+2026-07-10T10:51:34Z,read_perf,plain,1048576,1.0,16,5,64,21,69.72,1115.51,1115.51,14.313,11.184,21.912,23.423,0,0,,results/logs/store_read_perf_plain_vs1048576_bs16_20260710T105306.log
+2026-07-10T10:51:34Z,read_perf,plain,4194304,4.0,1,5,64,1,571.43,571.43,892.85,1.733,0.811,3.364,10.366,0,0,,results/logs/store_read_perf_plain_vs4194304_bs1_20260710T105314.log
+2026-07-10T10:51:34Z,read_perf,plain,4194304,4.0,4,5,64,1,186.0,744.0,744.0,5.359,2.157,14.809,20.919,0,0,,results/logs/store_read_perf_plain_vs4194304_bs4_20260710T105316.log
+2026-07-10T10:51:34Z,read_perf,plain,4194304,4.0,8,5,64,1,75.47,603.76,603.76,13.223,5.65,40.129,46.329,0,0,,results/logs/store_read_perf_plain_vs4194304_bs8_20260710T105318.log
+2026-07-10T10:51:34Z,read_perf,plain,4194304,4.0,16,5,64,1,112.04,1792.58,0.0,8.898,3.041,23.193,26.036,0,0,,results/logs/store_read_perf_plain_vs4194304_bs16_20260710T105321.log

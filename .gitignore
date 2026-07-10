@@ -7,14 +7,13 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 
-# Results (keep directory placeholders)
-results/csv/*.csv
+# Results: keep demo CSVs/figures trackable; ignore bulky logs & caches
 results/logs/*.log
 results/logs/*.csv
-results/figures/*.png
 !results/csv/.gitkeep
 !results/logs/.gitkeep
 !results/figures/.gitkeep
+benchmark/__pycache__/
 
 # IDE / OS
 .idea/

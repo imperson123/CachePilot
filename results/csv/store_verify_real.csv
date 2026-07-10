@@ -1,0 +1,2 @@
+timestamp,scenario,io_api,value_size,value_size_mb,batch_size,runtime,nr_objects,return_code,req_s,kv_s,mib_s,lat_mean,lat_p50,lat_p95,lat_p99,misses,verify_failures,errors,log_file
+2026-07-10T10:50:14Z,verify_write,plain,4096,0.003906,4,5,16,0,2482.98,9931.94,38.8,0.377,0.26,0.718,0.781,0,0,,results/logs/store_verify_write_plain_vs4096_bs4_20260710T105014.log
