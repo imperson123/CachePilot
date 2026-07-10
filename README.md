@@ -17,6 +17,7 @@
 <p align="center">
   <a href="https://pan.baidu.com/s/1eXwtXfHxEAkfoE_EqY9pdw">演示视频</a> ·
   <a href="#真实实测结果摘要">实测结果</a> ·
+  <a href="#创新性">创新性</a> ·
   <a href="#开源规范性">开源规范</a> ·
   <a href="#场景适配性">场景适配</a> ·
   <a href="#dashboard-可视化演示">Dashboard</a> ·
@@ -55,7 +56,7 @@ mooncake_master → HTTP metadata → MooncakeDistributedStore
 | 技术完整性 | 30% | 真实 Store 实测 + Prefix / Scheduler 评估 + Dashboard + 文档 / PPT / 视频 |
 | 开源规范性 | 10% | 独立仓库、清晰目录、可复现脚本、文档齐全、非侵入对接 Mooncake |
 | 场景适配性 | 25% | 对齐长上下文 Prefix 复用、Store IO、多节点 KV 检索调度等真实 serving 场景 |
-| 创新性 | 35% | CachePilot 评分调度 + 官方 bench 包装评测套件 + 复用收益量化 |
+| 创新性 | 35% | **CachePilot 多目标检索评分** + Store→复用→调度闭环评测 + 非侵入官方 bench 扩展 |
 
 ---
 
@@ -99,6 +100,77 @@ CachePilot 面向 Mooncake / LLM serving 中的真实 KVCache 痛点设计，而
 - **调度层**：适配多副本、多节点检索时的延迟–流量–负载权衡，CachePilot 分数显式纳入 importance、reuse、fetch latency。
 
 > 说明：Store Benchmark 为 AutoDL RTX 4090 上的**真实实机实测**；Prefix / Scheduler 为面向上述场景的**可控 workload 策略评估**，用于指导调度与复用策略，不替代端到端 LLM serving 声明。
+
+---
+
+## 创新性
+
+CachePilot 的创新不在于重写 Mooncake，而在于提出一套**可落地的 KVCache 评测与调度方法论**：用真实 Store 建立 IO 基线，用可控 workload 量化 Prefix 复用收益，再用多目标评分策略优化跨节点检索，三者形成闭环。
+
+### 创新点一：CachePilot 多目标检索评分（核心算法）
+
+相对 Random / Nearest / 仅看复用的 Reuse-aware，CachePilot 在选副本时同时权衡 **重要性、复用热度、拉取代价、瞬时负载、本地亲和**：
+
+```text
+score = α · importance
+      + β · normalized_reuse
+      − γ · normalized_fetch_latency
+      − load_penalty
+      + local_bonus
+```
+
+| 相对基线 | 基线做法 | CachePilot 增量 |
+|----------|----------|-----------------|
+| Random | 随机挑副本 | 用可解释分数替代盲目选择 |
+| Nearest | 只最小化距离 / 延迟 | 额外纳入 reuse 与 importance，避免“近但不重要” |
+| Reuse-aware | 偏爱高复用块 | 额外抑制高延迟与热点源，降低 `hotspot_ratio` |
+| **CachePilot** | — | **多目标联合优化**：延迟 ↓、远程流量可控、热点更均衡 |
+
+实验对比（同一 workload、固定 seed）可见：CachePilot 在保持较低 p99 的同时，**热点比优于 Nearest / Reuse-aware**（见 Dashboard Scheduler 页与 `retrieval_scheduler.csv`）。
+
+### 创新点二：Store → Prefix → Scheduler 闭环评测框架
+
+多数工作只做其中一层；CachePilot 把三层串成可复现流水线：
+
+```text
+真实 Mooncake Store 实测（吞吐 / p50 / p99）
+        ↓ 标定 store_get 延迟参数
+Prefix Reuse 收益评估（TTFT reduction）
+        ↓ 暴露跨节点取 KV 的代价结构
+Retrieval Scheduler 策略对比（CachePilot vs 基线）
+        ↓
+统一 CSV / 图表 / Dashboard 输出
+```
+
+**创新含义：** 不是“再跑一遍官方 bench”，而是把官方 Store 指标转化为上层复用与调度决策的输入，形成 **测量 → 量化 → 决策** 的评测闭环。
+
+### 创新点三：非侵入式官方 Benchmark Extension
+
+| 常见做法 | CachePilot 做法 |
+|----------|-----------------|
+| Fork Mooncake 改核心 | **零侵入**：独立仓库，subprocess 包装 `store_kv_bench.py` |
+| 自研假 Store API | **真实** `MooncakeDistributedStore` 语义与官方 scenario |
+| 单次手工压测 | 参数矩阵自动化：`value_size × batch_size`，日志解析入库 |
+| 只有数字表格 | CSV + PNG + Streamlit Dashboard，面向评审演示 |
+
+这使创新成果可以**在不改上游的前提下复现、对比、扩展**（例如继续接入 `zcopy` / `mixed_rw` / RDMA）。
+
+### 创新点四：把“复用值不值”变成可计算指标
+
+Prefix Reuse Evaluation 将长上下文场景抽象为：
+
+```text
+TTFT_cache = hit · (Store_get + decode_1st) + (1−hit) · (prefill + decode_1st)
+TTFT_reduction = TTFT_no_cache − TTFT_cache
+```
+
+从而回答工程上真正关心的问题：**在给定 prefix 长度与命中率下，复用能换来多少 TTFT 收益？**  
+该模块可直接吃真实 Store 的 get 延迟标定，使评估结果与实测底座对齐，而不是脱离硬件的空泛曲线。
+
+### 一句话总结
+
+> **CachePilot = 真实 Mooncake Store 基线 × Prefix 复用收益量化 × 多目标检索评分调度**  
+> 在不修改 Mooncake 核心的前提下，给出可复现、可对比、可演示的 KVCache 优化评测方案。
 
 ---
 
@@ -193,6 +265,7 @@ bash scripts/run_dashboard.sh
 | 可复现实验 | `scripts/run_all.sh` + Dashboard | CSV / PNG / log + 可视化演示 |
 | 开源规范 | 独立仓库 + LICENSE + 文档 | 非侵入、可复现、可审查 |
 | 场景适配 | Prefix / Store / Scheduler | 对齐长上下文复用与跨节点取 KV |
+| 创新性 | CachePilot 评分 + 闭环评测 | 多目标调度、Store→复用→调度、官方 bench 扩展 |
 
 ---
 
