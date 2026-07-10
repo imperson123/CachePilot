@@ -2,6 +2,10 @@
 
 ### 基于 Mooncake 的 KVCache 复用与调度评测系统
 
+> **演示视频（百度网盘）**  
+> 链接：https://pan.baidu.com/s/1eXwtXfHxEAkfoE_EqY9pdw  
+> 提取码：`hvb7`
+
 <p align="center">
   <img src="docs/screenshots/dashboard_store_benchmark.png" alt="CachePilot Store Benchmark Dashboard" width="100%"/>
 </p>
@@ -11,13 +15,14 @@
 </p>
 
 <p align="center">
+  <a href="https://pan.baidu.com/s/1eXwtXfHxEAkfoE_EqY9pdw">演示视频</a> ·
   <a href="#真实实测结果摘要">实测结果</a> ·
   <a href="#dashboard-可视化演示">Dashboard</a> ·
   <a href="#如何运行">快速开始</a> ·
   <a href="DESIGN.md">设计文档</a> ·
   <a href="EVALUATION.md">评测文档</a> ·
   <a href="docs/CachePilot_技术文档.pdf">技术文档 PDF</a> ·
-  <a href="docs/CachePilot_汇报PPT.pdf">汇报 PPT PDF</a>
+  <a href="docs/CachePilot_彩色汇报PPT.pdf">汇报 PPT PDF</a>
 </p>
 
 ---
@@ -150,7 +155,7 @@ CachePilot/
 ├── docs/
 │   ├── screenshots/             # Dashboard 截图
 │   ├── CachePilot_技术文档.pdf
-│   └── CachePilot_汇报PPT.pdf
+│   └── CachePilot_彩色汇报PPT.pdf
 └── results/
     ├── csv/                     # 真实实测 + 评估 CSV
     ├── logs/
@@ -217,7 +222,7 @@ bash scripts/run_dashboard.sh
 | `results/figures/*.png` | 带宽 / 延迟 / TTFT / 调度图 |
 | `docs/screenshots/*.png` | Dashboard 演示截图 |
 | `docs/CachePilot_技术文档.pdf` | 技术文档 |
-| `docs/CachePilot_汇报PPT.pdf` | 汇报 PPT |
+| `docs/CachePilot_彩色汇报PPT.pdf` | 汇报 PPT |
 
 ---
 
