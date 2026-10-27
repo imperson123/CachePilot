@@ -1,0 +1,1 @@
+{"name":"Long-context QA","description":"Long shared prefixes with repeated queries","seed":42,"requests":160,"objects":32,"hot_fraction":0.18,"hot_probability":0.78,"prefix_tokens":[2048,4096,8192],"size_mb":[1,2,4],"latency_spike_at":-1,"latency_spike_factor":1.0}

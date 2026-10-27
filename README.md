@@ -1,4 +1,51 @@
-# CachePilot
+# CachePilot 2.0 (OpenAtom 2026 development branch)
+
+Adaptive KV Cache Management and Decision System for Open-source LLM Serving.
+
+> Status: a reproducible **decision and replay prototype**, not a live Mooncake KV lifecycle controller. The original CachePilot V1 evaluation remains available under **V1 Evaluation Archive** in the Dashboard and in the unchanged `benchmark/`, `results/csv/`, and `results/figures/` directories. See the [delivery record](docs/DELIVERABLES.md), [V1 runtime audit](docs/V1_RUNTIME_AUDIT.md), and [V2 architecture](docs/ARCHITECTURE_V2.md).
+
+## Quick Start
+
+Python 3.10+ is required. No GPU, model download, or live Mooncake server is needed for the demo replay.
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# Linux / WSL: source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m cachepilot.replay.generate_demo
+python -m streamlit run dashboard.py
+```
+
+Open `http://localhost:8501`. Use **2.0 Console** for the five new views; switch to **V1 Evaluation Archive** for the original pages. If you already have a compatible Python environment, activate it and skip the `venv` creation and dependency-install steps.
+
+One-command launch after dependencies are present: Windows `scripts\run_demo.bat`, Linux/WSL `bash scripts/run_demo.sh`. The V1 `scripts/run_all.sh` and Store benchmark scripts are unchanged.
+
+**For the 2.0 demo, use `run_demo`, not V1 `run_all.sh`: the latter launches benchmark stages and can overwrite `results/csv/store_benchmark.csv` when a Store service is configured.**
+
+## What 2.0 Adds
+
+- R³-KV: online reuse estimate, historical-Store-calibrated retrieve estimate, V1-prefix-based recompute estimate, explainable score components, and RETAIN / REMOTE_KEEP / EVICT / FETCH / RECOMPUTE / PREFETCH recommendations.
+- Adaptive controller: EWMA feedback, persistent threshold triggers, bounded weight steps, normalized weights, and an event log of every adjustment.
+- Four deterministic scenarios and JSONL replay with Play / Pause / speed / Reset / Jump controls.
+- Five Streamlit views: Overview, KV State Explorer, R³-KV Decision, Adaptive Controller, and Policy Lab. The V1 pages remain separately accessible.
+- Shared-trace simulation of Random, Nearest, Reuse-aware, CachePilot V1, R³-KV, and R³-KV + Adaptive. **These comparisons are simulated, not a measured serving speedup.**
+
+## Evidence Labels
+
+| Label | Meaning |
+|---|---|
+| HISTORICAL REAL MOONCAKE | Archived AutoDL RTX 4090 Store CSV and figures from V1; not remeasured on this machine |
+| ESTIMATED FROM HISTORICAL MOONCAKE | Retrieve cost model uses archived Store latency/bandwidth with an explicit scenario network factor |
+| ESTIMATED FROM V1 PREFIX MODEL | Recompute and TTFT use the V1 formula, not a timed model prefill |
+| SIMULATED SHARED TRACE | Policy comparison on seeded synthetic requests and a simulated cache tier |
+| REPLAY OF SIMULATION | UI playback of the generated JSONL; not a live stream |
+
+Run tests with `python -m unittest discover -s tests -v`. For Windows and Linux/WSL details, provenance, limitations, and the 3–5 minute presentation script, see [Demo Guide](docs/DEMO_FLOW.md).
+
+---
+
+# CachePilot V1 Archive
 
 ### 基于 Mooncake 的 KVCache 复用与调度评测系统
 

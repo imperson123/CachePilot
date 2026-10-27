@@ -1,0 +1,1 @@
+{"name":"Bursty Serving","description":"Load and remote-latency shift during a request burst","seed":44,"requests":160,"objects":48,"hot_fraction":0.22,"hot_probability":0.65,"prefix_tokens":[512,1024,2048,4096],"size_mb":[0.5,1,2,4],"latency_spike_at":65,"latency_spike_factor":4.0}

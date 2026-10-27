@@ -304,11 +304,17 @@ mooncake_master
 
 def main() -> None:
     st.set_page_config(
-        page_title=PAGE_TITLE,
+        page_title="CachePilot 2.0",
         page_icon="📦",
         layout="wide",
         initial_sidebar_state="expanded",
     )
+    workspace = st.sidebar.radio("Workspace", ["2.0 Console", "V1 Evaluation Archive"])
+    if workspace == "2.0 Console":
+        from cachepilot.ui.dashboard_v2 import render
+
+        render()
+        return
     st.title(PAGE_TITLE)
     st.caption(
         "Non-invasive evaluation suite · Real Mooncake Store benchmark · "

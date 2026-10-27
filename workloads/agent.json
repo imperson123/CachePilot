@@ -1,0 +1,1 @@
+{"name":"Multi-turn Agent","description":"Shared system prompts and recurring tool context","seed":43,"requests":160,"objects":40,"hot_fraction":0.25,"hot_probability":0.68,"prefix_tokens":[512,1024,2048,4096],"size_mb":[0.5,1,2],"latency_spike_at":-1,"latency_spike_factor":1.0}

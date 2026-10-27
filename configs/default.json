@@ -1,0 +1,30 @@
+{
+  "weights": {"reuse": 0.30, "saving": 0.30, "locality": 0.15, "load": 0.15, "size": 0.10},
+  "thresholds": {
+    "retain_score": 0.28,
+    "remote_keep_score": 0.12,
+    "evict_max_reuse_probability": 0.25,
+    "evict_max_recompute_ms": 100.0,
+    "prefetch_probability": 0.72,
+    "prefetch_interval_factor": 1.25
+  },
+  "capacity_mb": 24,
+  "control_window": 12,
+  "prefill_ms_per_token": 0.08,
+  "local_hit_ms": 0.3,
+  "network_factor": 1.3,
+  "adaptive": {
+    "step": 0.04,
+    "min_weight": 0.05,
+    "max_weight": 0.50,
+    "alpha": 0.45,
+    "persistence": 2,
+    "targets": {
+      "memory_pressure": 0.75,
+      "p95_retrieval_ms": 15.0,
+      "hotspot_ratio": 1.8,
+      "recompute_time_ms": 150.0,
+      "repeated_reuse": 0.55
+    }
+  }
+}

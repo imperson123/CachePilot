@@ -1,0 +1,1 @@
+{"name":"Video-like Trace Simulation","description":"Temporal locality and old-state reactivation; not a Video-LMM benchmark","seed":45,"requests":160,"objects":48,"hot_fraction":0.20,"hot_probability":0.55,"prefix_tokens":[512,1024,2048],"size_mb":[0.5,1,2],"latency_spike_at":100,"latency_spike_factor":1.5}
